@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if report_data and report_data.title %}
+        {{ report_data.title }}
+    {% else %}
+        Отчет об остатках материалов #{{ report.id }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-3">
+        {% if report_data and report_data.title %}
+            {{ report_data.title }}
+        {% else %}
+            Отчет об остатках материалов #{{ report.id }}
+        {% endif %}
+    </h2>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Информация об отчете</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>ID отчета:</strong> {{ report.id }}</p>
+                    <p><strong>Дата формирования:</strong> {{ report.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Сформировал:</strong> {{ report.user.full_name if report.user else 'Система' }}</p>
+                    {% if report_data and report_data.materials is defined %}
+                    <p><strong>Всего позиций:</strong> {{ report_data.materials|length }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if report_data and report_data.notes %}
+                <p class="mt-2"><strong>Примечания:</strong> {{ report_data.notes }}</p>
+            {% endif %}
+            {% if report_data and report_data.total_stock_value is defined %}
+                <p class="mt-2"><strong>Общая стоимость остатков:</strong> <span class="fw-bold">{{ "%.2f ₽"|format(report_data.total_stock_value) }}</span></p>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if report_data and report_data.materials %}
+    <div class="card">
+        <div class="card-header">
+            <h5>Остатки материалов на складе</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm"> {# table-sm для компактности #}
+                    <thead class="table-light">
+                        <tr>
+                            <th>Код</th>
+                            <th>Наименование</th>
+                            <th>Ед. изм.</th>
+                            <th class="text-end">Количество на складе</th>
+                            <th class="text-end">Средняя себестоимость</th>
+                            <th class="text-end">Общая стоимость</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for material in report_data.materials %}
+                        <tr>
+                            <td>{{ material.code }}</td>
+                            <td>{{ material.name }}</td>
+                            <td>{{ material.unit }}</td>
+                            <td class="text-end">
+                                {{ "%.3f"|format(material.stock_quantity|float) if material.stock_quantity is not none else '-' }}
+                            </td>
+                            <td class="text-end">
+                                {{ "%.2f ₽"|format(material.average_cost_price|float) if material.average_cost_price is not none else '-' }}
+                            </td>
+                            <td class="text-end fw-bold">
+                                {{ "%.2f ₽"|format(material.total_value|float) if material.total_value is not none else '-' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                     {% if report_data.total_stock_value is defined %}
+                        <tfoot>
+                            <tr class="table-secondary">
+                                <td colspan="5" class="text-end fw-bolder">ИТОГО:</td>
+                                <td class="text-end fw-bolder">{{ "%.2f ₽"|format(report_data.total_stock_value) }}</td>
+                            </tr>
+                        </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">Нет данных об остатках материалов в этом отчете.</div>
+    {% endif %}
+    
+    <div class="mt-4 d-flex justify-content-between">
+        <a href="{{ url_for('routes.report_list') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Назад к списку
+        </a>
+        <div>
+            <a href="{{ url_for('routes.export_report_pdf', report_id=report.id) }}" 
+               class="btn btn-danger me-2">
+                <i class="bi bi-file-pdf"></i> Экспорт в PDF
+            </a>
+            <a href="{{ url_for('routes.export_report_excel', report_id=report.id) }}" 
+               class="btn btn-success">
+                <i class="bi bi-file-excel"></i> Экспорт в Excel
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

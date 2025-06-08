@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header {% if specification %}bg-primary{% else %}bg-success{% endif %} text-white">
+            <h4><i class="bi bi-card-checklist"></i> {{ title }}</h4>
+        </div>
+        <div class="card-body">
+           
+            {% if missing_products and not product_id_for_form_action %}
+                <div class="alert alert-warning">
+                    <p class="mb-1">В системе нет продуктов. <a href="{{ url_for('routes.add_product') }}" class="alert-link">Добавить продукт?</a></p>
+                </div>
+            {% elif missing_categories %}
+                 <div class="alert alert-warning">
+                    <p class="mb-0">В системе нет категорий материалов. <a href="{{ url_for('routes.add_material_category') }}" class="alert-link">Добавить категорию материала?</a></p>
+                </div>
+            {% else %}
+            {% set form_action_url = "" %}
+            {% if request.endpoint == 'routes.add_specification_general' %}
+                {% set form_action_url = url_for('routes.add_specification_general') %}
+            {% elif request.endpoint == 'routes.add_specification_for_product' %}
+                {% set form_action_url = url_for('routes.add_specification_for_product', product_id=product_id_for_form_action) %}
+            {% elif request.endpoint == 'routes.edit_specification' and specification %}
+                {% set form_action_url = url_for('routes.edit_specification', norm_id=specification.id) %}
+            {% endif %}
+
+            <form method="POST" action="{{ form_action_url }}">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    {{ form.product_id.label(class="form-label") }}
+                    {{ form.product_id(class="form-select" + (" is-invalid" if form.product_id.errors else ""), **(form.product_id.render_kw or {})) }}
+                    {% if form.product_id.errors %}<div class="invalid-feedback">{% for error in form.product_id.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.material_category_id.label(class="form-label") }}
+                    {# Удален data-units атрибут отсюда #}
+                    <select
+                        name="{{ form.material_category_id.name }}"
+                        id="material_category_id_select"
+                        class="form-select {{ "is-invalid" if form.material_category_id.errors else "" }}"
+                        {% if form.material_category_id.render_kw and form.material_category_id.render_kw.get('disabled') %}disabled{% endif %}>
+                        {% for value, label in form.material_category_id.choices %}
+                            <option value="{{ value }}" {% if form.material_category_id.data|string == value|string %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {% if form.material_category_id.errors %}<div class="invalid-feedback">{% for error in form.material_category_id.errors %}<span>{{ error }}</span><br>{% endfor %}</div>
+                    {% else %}
+                        {% set selected_cat_id = form.material_category_id.data if form.material_category_id.data else (specification.material_category_id if specification else None) %}
+                        {% if selected_cat_id and selected_cat_id|int != 0 and all_material_categories %}
+                            {% for cat_obj in all_material_categories %}
+                                {% if cat_obj.id == selected_cat_id|int %}
+                                    <small class="form-text text-muted">На складе: {{ cat_obj.stock_quantity|default('-', True)|round(3) }} {{ cat_obj.unit|default('', True) }}. Ср.цена: {{ (cat_obj.average_cost_price or 0)|round(2) }} ₽</small>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.norm_value.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ form.norm_value(class="form-control" + (" is-invalid" if form.norm_value.errors else ""), **(form.norm_value.render_kw or {})) }}
+                        <span class="input-group-text" id="norm_value_unit_display">ед.</span>
+                    </div>
+                     {% if form.norm_value.errors %}<div class="invalid-feedback d-block">{% for error in form.norm_value.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between mt-4">
+                    {{ form.submit(class="btn btn-success" if not specification else "btn btn-primary") }}
+                    <a href="{{ url_for('routes.specification_list') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Отмена
+                    </a>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const materialSelect = document.getElementById('material_category_id_select');
+    const normValueUnitDisplay = document.getElementById('norm_value_unit_display');
+    // const stockInfoDisplay = document.getElementById('stock_info_display'); // Если используется для stock_info - раскомментировать
+
+    // Получаем данные materialUnits напрямую из переменной, переданной из Python
+    // Убедитесь, что в Python вы передаете переменную `material_units_map_for_js` (или аналогичную)
+    // которая содержит словарь {id_категории: 'единица_измерения'}
+    let materialUnits = {{ material_units_map_for_js|tojson|safe if material_units_map_for_js else "{}" }};
+    
+    let allMaterialCategoriesData = {}; // Для хранения полной информации о категориях
+
+    // Загрузка полной информации о категориях (если передается из шаблона)
+    // Этот блок остается без изменений, т.к. to_dict должен возвращать сериализуемые данные
+    const allMaterialCategoriesJsonString = '{{ all_material_categories_json_data|tojson|safe if all_material_categories_json_data else "[]" }}';
+
+    try {
+        allMaterialCategoriesData = JSON.parse(allMaterialCategoriesJsonString);
+        // console.log("Загруженные категории:", allMaterialCategoriesData);
+    } catch (e) {
+        console.error("Ошибка парсинга allMaterialCategoriesJsonString:", e, allMaterialCategoriesJsonString);
+    }
+
+    if (materialSelect && normValueUnitDisplay) {
+        function updateMaterialInfo() {
+            const selectedCategoryId = materialSelect.value;
+            // Проверяем, что materialUnits является объектом и содержит ключ
+            if (materialUnits && typeof materialUnits === 'object' && materialUnits.hasOwnProperty(selectedCategoryId)) {
+                normValueUnitDisplay.textContent = materialUnits[selectedCategoryId] || 'ед.';
+            } else {
+                normValueUnitDisplay.textContent = 'ед.';
+            }
+            // Логика для stockInfoDisplay, если она нужна
+        }
+        materialSelect.addEventListener('change', updateMaterialInfo);
+
+        // Первоначальное обновление при загрузке страницы
+        if (materialSelect.value && materialSelect.value !== "0" && materialSelect.value !== "") {
+             updateMaterialInfo();
+        } else {
+            normValueUnitDisplay.textContent = 'ед.';
+            // if (stockInfoDisplay) stockInfoDisplay.style.display = 'none';
+        }
+    } else {
+        if (!materialSelect) console.error("Элемент material_category_id_select не найден");
+        if (!normValueUnitDisplay) console.error("Элемент norm_value_unit_display не найден");
+    }
+});
+</script>
+{% endblock %}

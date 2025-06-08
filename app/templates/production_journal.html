@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Журнал производственных затрат{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    {# Секция для общих расходов и их поиска удалена #}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-tools"></i> Затраты на производство (Журнал производства)</h2>
+        <a href="{{ url_for('routes.produce_product') }}" class="btn btn-info"> 
+            <i class="bi bi-hammer"></i> Запустить производство
+        </a>
+    </div>
+
+    {% if production_logs %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover table-bordered"> 
+            <thead class="table-info"> 
+                <tr>
+                    <th>ID Записи</th>
+                    <th>Дата пр-ва</th>
+                    <th>Продукт</th>
+                    <th class="text-end">Кол-во</th>
+                    <th class="text-end">Себест. за ед. (мат.)</th>
+                    <th class="text-end">Общая себест. (мат.)</th>
+                    <th>Партия/Заметки</th>
+                    <th>Оператор</th>
+                    <th class="text-center">Детализация</th> {# Новый столбец #}
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in production_logs %}
+                <tr>
+                    <td>{{ log.id }}</td>
+                    <td>{{ log.production_date.strftime('%d.%m.%Y') }}</td>
+                    <td>{{ log.product.name if log.product else 'N/A' }}</td>
+                    <td class="text-end">{{ log.quantity_produced }}</td>
+                    <td class="text-end">{{ "%.2f ₽"|format(log.cost_per_unit_calculated) }}</td>
+                    <td class="text-end fw-bold">{{ "%.2f ₽"|format(log.total_cost_calculated) }}</td>
+                    <td>{{ log.notes | truncate(30, True) if log.notes else '-' }}</td> 
+                    <td>{{ log.user.username if log.user else '-' }}</td>
+                    <td class="text-center">
+                        {% if log.config and log.config is iterable and log.config|length > 0 %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#detailsModal{{log.id}}">
+                            <i class="bi bi-card-list"></i>
+                        </button>
+                        <!-- Модальное окно для деталей -->
+                        <div class="modal fade" id="detailsModal{{log.id}}" tabindex="-1" aria-labelledby="detailsModalLabel{{log.id}}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="detailsModalLabel{{log.id}}">Детализация материалов для производства #{{log.id}} (Продукт: {{ log.product.name }})</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if log.config and log.config is mapping %} {# Проверка, что config это словарь, а не список (старая версия) #}
+                                            {% set material_details = log.config.get('material_details', []) if log.config.get('material_details') else log.config %}
+                                        {% elif log.config and log.config is iterable %}
+                                            {% set material_details = log.config %}
+                                        {% else %}
+                                            {% set material_details = [] %}
+                                        {% endif %}
+
+                                        {% if material_details %}
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Материал</th>
+                                                    <th class="text-end">Кол-во</th>
+                                                    <th>Ед.изм.</th>
+                                                    <th class="text-end">Цена за ед.</th>
+                                                    <th class="text-end">Сумма</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for detail in material_details %}
+                                                <tr>
+                                                    <td>{{ detail.material_name }}</td>
+                                                    <td class="text-end">{{ detail.quantity_used|round(3) }}</td>
+                                                    <td>{{ detail.unit }}</td>
+                                                    <td class="text-end">{{ detail.cost_per_unit|round(2) }} ₽</td>
+                                                    <td class="text-end">{{ detail.total_material_cost|round(2) }} ₽</td>
+                                                </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        {% else %}
+                                            <p>Детализация материалов отсутствует.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% if total_production_log_cost is defined and total_production_log_cost > 0 %}
+            <tfoot>
+                <tr class="table-secondary"> 
+                    <td colspan="5" class="text-end fw-bold">ИТОГО по производственным затратам (материалы):</td>
+                    <td class="text-end fw-bold">{{ "%.2f ₽"|format(total_production_log_cost) }}</td>
+                    <td colspan="3"></td> {# Изменено colspan #}
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        Записей о производстве продукции еще нет.
+        <a href="{{ url_for('routes.produce_product') }}" class="alert-link">Запустить производство?</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

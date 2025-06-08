@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title if title else "Добавление категории материала" }}{% endblock %} 
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h4><i class="bi bi-tag-fill"></i> {{ title if title else "Добавление новой категории материала" }}</h4>
+        </div>
+        <div class="card-body">
+           
+            <form method="POST" action="{{ url_for('routes.add_material_category') }}">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Например, ДСП, Краска, Винты") }}
+                    {% if form.name.errors %}<div class="invalid-feedback">{% for error in form.name.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.code.label(class="form-label") }}
+                        {{ form.code(class="form-control" + (" is-invalid" if form.code.errors else ""), placeholder="Например, DSP001, PNT01, SCRW5") }}
+                        {% if form.code.errors %}<div class="invalid-feedback">{% for error in form.code.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.unit.label(class="form-label") }}
+                        {{ form.unit(class="form-select" + (" is-invalid" if form.unit.errors else "")) }}
+                        {% if form.unit.errors %}<div class="invalid-feedback">{% for error in form.unit.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.stock_quantity.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ form.stock_quantity(class="form-control" + (" is-invalid" if form.stock_quantity.errors else "")) }}
+                        <span class="input-group-text">
+                            <span id="stock_unit_display">ед.</span> 
+                        </span>
+                    </div>
+                    {% if form.stock_quantity.errors %}<div class="invalid-feedback d-block">{% for error in form.stock_quantity.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                    <small class="form-text text-muted">Это начальное количество при создании категории. В дальнейшем остатки изменяются через оприходование и производство.</small>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=3, placeholder="Любая дополнительная информация о категории материала...") }}
+                    {% if form.description.errors %}<div class="invalid-feedback">{% for error in form.description.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    {% if form.submit %} 
+                        {{ form.submit(class="btn btn-success") }} 
+                    {% else %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-plus-circle"></i> Добавить категорию
+                        </button>
+                    {% endif %}
+                    <a href="{{ url_for('routes.material_categories') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const unitSelect = document.getElementById('unit'); 
+        const stockUnitDisplay = document.getElementById('stock_unit_display');
+
+        if (unitSelect && stockUnitDisplay) {
+            function updateStockUnit() {
+                const selectedOption = unitSelect.options[unitSelect.selectedIndex];
+                if (selectedOption && selectedOption.value) { 
+                    stockUnitDisplay.textContent = selectedOption.text; 
+                } else {
+                    stockUnitDisplay.textContent = 'ед.'; 
+                }
+            }
+            unitSelect.addEventListener('change', updateStockUnit);
+            updateStockUnit(); 
+        }
+    });
+</script>
+{% endblock %}

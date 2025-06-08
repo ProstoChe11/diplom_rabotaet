@@ -1,0 +1,138 @@
+{# --- START OF FILE report_list.html --- #}
+{# templates/report_list.html #}
+{% extends "base.html" %}
+
+{% block title %}Отчеты{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Список отчетов</h2>
+        <div>
+            {# Кнопка "Создать отчет по расходам" удалена #}
+            {% if current_user.role in ['admin', 'accountant', 'analyst'] %} {# Расширил доступ для аналитика #}
+            {# <<< ИЗМЕНЕНИЕ 1: Добавлен id к форме >>> #}
+            <form action="{{ url_for('routes.create_material_stock_report') }}" method="POST" class="d-inline" id="createMaterialStockReportForm">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-archive"></i> Сформировать отчет по остаткам материалов
+                </button>
+            </form>
+            {% endif %}
+            <button class="btn btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+                <i class="bi bi-question-circle"></i> Помощь
+            </button>
+        </div>
+    </div>
+    
+    {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+        {% if reports_data %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Тип отчета</th>
+                        <th>Дата формирования</th>
+                        <th>Кол-во позиций</th>
+                        <th>Общая стоимость (для остатков)</th> {# Изменено #}
+                        <th>Создал</th>
+                        <th class="text-center">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in reports_data %} 
+                    {% if item.report.report_type == 'material_stock' %} {# Отображаем только отчеты по остаткам #}
+                    <tr>
+                        <td>{{ item.report.id }}</td>
+                        <td>
+                            <span class="badge bg-success">По остаткам материалов</span>
+                        </td>
+                        <td>
+                            {{ item.report.created_at.strftime('%d.%m.%Y %H:%M') }}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary rounded-pill">
+                                {{ item.item_count }} поз.
+                            </span>
+                        </td>
+                        <td class="fw-bold">
+                            {% if item.report.config and item.report.config.get('total_stock_value') is not none %}
+                                {{ "%.2f ₽"|format(item.report.config.get('total_stock_value')) }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>{{ item.report.user.full_name if item.report.user else 'Система' }}</td>
+                        <td class="text-center">
+                            <div class="btn-group" role="group" aria-label="Действия с отчетом">
+                                <a href="{{ url_for('routes.report_details', report_id=item.report.id) }}" 
+                                   class="btn btn-sm btn-info"
+                                   title="Просмотреть детали">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('routes.export_report_pdf', report_id=item.report.id) }}" 
+                                   class="btn btn-sm btn-danger"
+                                   title="Экспорт в PDF">
+                                    <i class="bi bi-file-pdf"></i>
+                                </a>
+                                <a href="{{ url_for('routes.export_report_excel', report_id=item.report.id) }}"
+                                   class="btn btn-sm btn-success"
+                                   title="Экспорт в Excel">
+                                    <i class="bi bi-file-excel"></i>
+                                </a>
+                                {% if current_user.role in ['admin', 'accountant'] %}
+                                <form action="{{ url_for('routes.delete_report', report_id=item.report.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-warning" 
+                                            title="Удалить отчет"
+                                            onclick="return confirm('Вы уверены, что хотите удалить этот отчет?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info mt-3" role="alert">
+            <i class="bi bi-info-circle-fill"></i> Отчеты еще не сформированы.
+            {% if current_user.role in ['admin', 'accountant'] %}
+            {# <<< ИЗМЕНЕНИЕ 2: Упрощен onclick >>> #}
+            Вы можете <a href="#" onclick="document.getElementById('createMaterialStockReportForm').submit(); return false;" class="alert-link">сформировать отчет по остаткам материалов</a>.
+            {% endif %}
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="alert alert-warning" role="alert">
+      Доступ к отчетам запрещен для вашей роли.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Модальное окно "Помощь" -->
+<div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="helpModalLabel"><i class="bi bi-question-circle-fill"></i> Помощь по отчетам</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <h6>Отчет по остаткам материалов:</h6>
+        <p>Этот отчет показывает текущее количество и среднюю себестоимость каждого материала на складе на момент формирования отчета. Он полезен для инвентаризации и оценки складских запасов.</p>
+        <p>Для формирования нажмите кнопку "Сформировать отчет по остаткам материалов".</p>
+        <hr>
+        <p>Данные в отчетах являются снимком на момент их создания. Для актуальной информации формируйте новый отчет.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{# --- END OF FILE report_list.html --- #}

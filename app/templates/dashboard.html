@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="bi bi-speedometer2"></i> Панель управления</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card text-white bg-success h-100">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-people-fill"></i> Пользователи</h5>
+                        <p class="card-text display-6">{{ user_count }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {# Карточка "Расходы" удалена, так как expense_count больше нет #}
+            {# Вместо нее можно добавить карточку для Журнала Производства или Оприходований, если нужно #}
+            
+            {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('routes.production_journal') }}" class="text-decoration-none">
+                    <div class="card text-white bg-info h-100">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-journal-text"></i> Затраты на производство</h5>
+                            {# Здесь можно посчитать количество записей в ProductionLog, если передать его в шаблон #}
+                            {# <p class="card-text display-6">{{ production_log_count }}</p> #} 
+                            <p class="card-text">Просмотр журнала</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="col-md-4 mb-4">
+                <a href="{{ url_for('routes.report_list') }}" class="text-decoration-none">
+                    <div class="card text-white bg-warning h-100">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="bi bi-file-earmark-text"></i> Отчеты</h5>
+                            <p class="card-text display-6">{{ report_count }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            {% if current_user.role == 'admin' %}
+            <a href="{{ url_for('routes.admin_users') }}" class="btn btn-dark me-md-2">
+                <i class="bi bi-gear"></i> Администрирование
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

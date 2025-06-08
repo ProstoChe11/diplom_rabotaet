@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dipaiva2" # Или любое другое имя вашего проекта
+version = "0.1.0"
+# Добавьте другие метаданные по желанию
+# dependencies = [
+#    "flask",
+#    ... другие ваши зависимости ...
+# ]
+
+[tool.setuptools.packages.find]
+where = ["."]  # Искать пакеты в текущей директории (где находится app)
+include = ["app*"] # Включать пакеты, начинающиеся с 'app'
+# Если у вас есть другие пакеты верхнего уровня, добавьте их

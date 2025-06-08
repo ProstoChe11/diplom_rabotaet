@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-info text-dark"> 
+            <h4><i class="bi bi-tools"></i> {{ title }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('routes.produce_product') }}">
+                {{ form.hidden_tag() }}
+
+                <div class="row mb-3">
+                    <div class="col-md-7">
+                        {{ form.product_id.label(class="form-label") }}
+                        {{ form.product_id(class="form-select" + (" is-invalid" if form.product_id.errors else "")) }}
+                        {% if form.product_id.errors %}<div class="invalid-feedback">{% for error in form.product_id.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                    </div>
+                    <div class="col-md-5">
+                        {{ form.quantity_to_produce.label(class="form-label") }}
+                        {{ form.quantity_to_produce(class="form-control" + (" is-invalid" if form.quantity_to_produce.errors else ""), type="number", step="1") }}
+                        {% if form.quantity_to_produce.errors %}<div class="invalid-feedback">{% for error in form.quantity_to_produce.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                         {{ form.production_date.label(class="form-label") }}
+                         {{ form.production_date(class="form-control" + (" is-invalid" if form.production_date.errors else "")) }}
+                         {% if form.production_date.errors %}<div class="invalid-feedback">{% for error in form.production_date.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                    </div>
+                </div>
+                 <div class="mb-3">
+                    {{ form.notes.label(class="form-label") }}
+                    {{ form.notes(class="form-control" + (" is-invalid" if form.notes.errors else ""), rows="2") }}
+                    {% if form.notes.errors %}<div class="invalid-feedback">{% for error in form.notes.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+
+                {% if required_materials_info %}
+                <div class="alert alert-secondary mt-3">
+                    <h6>Требуемые материалы для выбранного количества:</h6>
+                    <ul>
+                        {% for item_info in required_materials_info %}
+                            <li>{{ item_info|safe }}</li> {# Добавлено |safe для отображения HTML (например, из Markup) #}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    {{ form.submit(class="btn btn-info") }}
+                    <a href="{{ url_for('routes.product_list') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if available_materials %}
+    <div class="card mt-4">
+        <div class="card-header">
+            Текущие остатки и средняя себестоимость материалов
+        </div>
+        <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+            <ul class="list-group list-group-flush">
+                {% for mat_cat in available_materials %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ mat_cat.name }} ({{ mat_cat.code }})</span>
+                        <div>
+                            <span class="badge bg-primary rounded-pill me-2">Остаток: {{ "%.3f"|format(mat_cat.stock_quantity) }} {{ mat_cat.unit }}</span>
+                            <span class="badge bg-secondary rounded-pill">Ср.цена: {{ "%.2f ₽"|format(mat_cat.average_cost_price or 0) }}</span>
+                        </div>
+                    </li>
+                {% else %}
+                    <li class="list-group-item">Категории материалов не найдены.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

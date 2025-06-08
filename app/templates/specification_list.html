@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Спецификации продукции{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-card-checklist"></i> Спецификации продукции (Нормы расхода)</h2>
+        {% if current_user.role in ['admin', 'accountant'] %}
+        <a href="{{ url_for('routes.add_specification_general') }}" class="btn btn-primary"> 
+            <i class="bi bi-plus-circle"></i> Добавить норму
+        </a>
+        {% endif %}
+    </div>
+
+    {% if products_with_specs and products_with_specs.items %}
+    <div class="accordion" id="productSpecificationsAccordion">
+        {% for product in products_with_specs.items %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ product.id }}">
+                <button class="accordion-button {% if not loop.first and not product_id_filter %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ product.id }}" aria-expanded="{{ 'true' if loop.first or product_id_filter else 'false' }}" aria-controls="collapse{{ product.id }}">
+                    <strong>{{ product.name }}</strong>
+                    <span class="badge bg-secondary ms-2">{{ product.specifications|length }} компонент(ов)</span>
+                </button>
+            </h2>
+            <div id="collapse{{ product.id }}" class="accordion-collapse collapse {% if loop.first or product_id_filter %}show{% endif %}" aria-labelledby="heading{{ product.id }}" data-bs-parent="#productSpecificationsAccordion">
+                <div class="accordion-body">
+                    {% if product.specifications %} 
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Материал (Код)</th>
+                                <th class="text-end">Норма расхода</th>
+                                <th>Ед. изм. материала</th>
+                                {% if current_user.role in ['admin', 'accountant'] %}
+                                <th class="text-center">Действия</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for norm in product.specifications %} 
+                            <tr>
+                                <td>
+                                    {% if norm.material_category %}
+                                        {{ norm.material_category.name }} ({{ norm.material_category.code }})
+                                    {% else %}
+                                        <span class="text-danger">Категория не найдена (ID: {{ norm.material_category_id }})</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if norm.norm_value is not none %}
+                                        {{ "%.5f"|format(norm.norm_value|float) }} {# Увеличена точность отображения #}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if norm.material_category and norm.material_category.unit %}
+                                        {{ norm.material_category.unit }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                {% if current_user.role in ['admin', 'accountant'] %}
+                                <td class="text-center">
+                                    <a href="{{ url_for('routes.edit_specification', norm_id=norm.id) }}" class="btn btn-sm btn-outline-primary" title="Редактировать норму"><i class="bi bi-pencil"></i></a>
+                                    {% if current_user.role == 'admin' %}
+                                    <form action="{{ url_for('routes.delete_specification', norm_id=norm.id) }}" method="POST" class="d-inline ms-1">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить норму" onclick="return confirm('Удалить эту норму ({% if norm.material_category %}{{ norm.material_category.name }}{% else %}ID: {{norm.material_category_id}}{% endif %}) из спецификации для продукта \'{{ product.name }}\'?')"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p class="text-muted">Для продукта "{{product.name}}" еще не добавлены нормы расхода.</p>
+                    {% endif %}
+                    {% if current_user.role in ['admin', 'accountant'] %}
+                    <a href="{{ url_for('routes.add_specification_for_product', product_id=product.id) }}" class="btn btn-success btn-sm mt-2">
+                        <i class="bi bi-plus-lg"></i> Добавить материал в спецификацию "{{ product.name }}"
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if products_with_specs.pages > 1 and not product_id_filter %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if not products_with_specs.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('routes.specification_list', page=products_with_specs.prev_num if products_with_specs.has_prev else '#', product_id_filter=product_id_filter or '') }}">Пред.</a>
+            </li>
+
+            {% for page_num in products_with_specs.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                {% if page_num %}
+                    {% if products_with_specs.page == page_num %}
+                    <li class="page-item active" aria-current="page"><span class="page-link">{{ page_num }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('routes.specification_list', page=page_num, product_id_filter=product_id_filter or '') }}">{{ page_num }}</a></li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+
+            <li class="page-item {% if not products_with_specs.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('routes.specification_list', page=products_with_specs.next_num if products_with_specs.has_next else '#', product_id_filter=product_id_filter or '') }}">След.</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% elif not (products_with_specs and products_with_specs.items) %} 
+        {% if product_id_filter %}
+             <div class="alert alert-info mt-3">
+                Показаны спецификации только для отфильтрованного продукта.
+                <a href="{{ url_for('routes.specification_list') }}" class="alert-link">Показать все спецификации.</a>
+            </div>
+        {% elif current_user.role in ['admin', 'accountant'] %}
+            <div class="alert alert-info mt-3">
+                Спецификации еще не созданы или нет продуктов со спецификациями. <br>
+                Вы можете <a href="{{ url_for('routes.add_product') }}" class="alert-link">добавить продукты</a>,
+                <a href="{{ url_for('routes.material_categories') }}" class="alert-link">категории материалов</a>,
+                а затем <a href="{{ url_for('routes.add_specification_general') }}" class="alert-link">добавить первую норму в спецификацию</a>.
+            </div>
+        {% else %}
+            <div class="alert alert-info mt-3">Нет данных для отображения.</div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

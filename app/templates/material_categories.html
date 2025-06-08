@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Категории материалов{% endblock %} 
+
+{% block content %}
+<div class="container mt-4"> 
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-tags-fill"></i> Категории материалов</h2>
+        <a href="{{ url_for('routes.add_material_category') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Добавить категорию
+        </a>
+    </div>
+
+   
+
+    {% if categories %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover"> 
+            <thead class="table-dark"> 
+                <tr>
+                    <th>Код</th>
+                    <th>Название</th>
+                    <th>Ед. изм.</th>
+                    <th class="text-end">Остаток на складе</th> 
+                    <th class="text-end">Ср. себестоимость</th> {# Новый столбец #}
+                    <th>Описание</th>
+                    <th class="text-center">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>{{ category.code }}</td>
+                    <td>{{ category.name }}</td>
+                    <td>{{ category.unit }}</td>
+                    <td class="text-end">
+                        {% if category.stock_quantity is not none %}
+                            {{ "%.3f"|format(category.stock_quantity|float) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="text-end"> {# Новый столбец #}
+                        {% if category.average_cost_price is not none %}
+                            {{ "%.2f ₽"|format(category.average_cost_price|float) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ category.description | truncate(50, True) if category.description else '-' }}</td> 
+                    <td class="text-center">
+                        <a href="{{ url_for('routes.edit_material_category', category_id=category.id) }}" class="btn btn-sm btn-outline-primary" title="Редактировать"><i class="bi bi-pencil"></i></a>
+                        {% if current_user.role == 'admin' %}
+                        <form action="{{ url_for('routes.delete_material_category', category_id=category.id) }}" method="POST" class="d-inline ms-1"> 
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Удалить" onclick="return confirm('Вы уверены, что хотите удалить категорию \'{{ category.name }}\'? Это действие необратимо и возможно только если категория не используется.')"><i class="bi bi-trash"></i></button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-3">
+        Категории материалов еще не добавлены.
+        <a href="{{ url_for('routes.add_material_category') }}" class="alert-link">Добавить первую категорию?</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

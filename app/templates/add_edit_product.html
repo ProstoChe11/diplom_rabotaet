@@ -1,0 +1,74 @@
+{# templates/add_edit_product.html #}
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="bi bi-box-seam"></i> {{ title }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for(request.endpoint, product_id=product.id if product else None) }}">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                    {% if form.name.errors %}<div class="invalid-feedback">{% for error in form.name.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+                
+                <div class="mb-3">
+                    {{ form.price.label(class="form-label") }}
+                    <div class="input-group">
+                        {{ form.price(class="form-control" + (" is-invalid" if form.price.errors else "")) }}
+                        <span class="input-group-text">₽</span>
+                    </div>
+                    {% if form.price.errors %}<div class="invalid-feedback d-block">{% for error in form.price.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+
+
+                <fieldset class="mb-3 border p-3">
+                    <legend class="w-auto px-2 h6">Габариты</legend>
+                    <div class="row">
+                        <div class="col-md-3 mb-2">
+                            {{ form.length.label(class="form-label") }}
+                            {{ form.length(class="form-control" + (" is-invalid" if form.length.errors else "")) }}
+                            {% if form.length.errors %}<div class="invalid-feedback">{% for error in form.length.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            {{ form.width.label(class="form-label") }}
+                            {{ form.width(class="form-control" + (" is-invalid" if form.width.errors else "")) }}
+                            {% if form.width.errors %}<div class="invalid-feedback">{% for error in form.width.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            {{ form.height.label(class="form-label") }}
+                            {{ form.height(class="form-control" + (" is-invalid" if form.height.errors else "")) }}
+                            {% if form.height.errors %}<div class="invalid-feedback">{% for error in form.height.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            {{ form.dimension_unit.label(class="form-label") }}
+                            {{ form.dimension_unit(class="form-select" + (" is-invalid" if form.dimension_unit.errors else "")) }}
+                            {% if form.dimension_unit.errors %}<div class="invalid-feedback">{% for error in form.dimension_unit.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="mb-3">
+                    {{ form.description.label(class="form-label") }}
+                    {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=4) }}
+                    {% if form.description.errors %}<div class="invalid-feedback">{% for error in form.description.errors %}<span>{{ error }}</span><br>{% endfor %}</div>{% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    {{ form.submit(class="btn btn-success") }}
+                    <a href="{{ url_for('routes.product_list') }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

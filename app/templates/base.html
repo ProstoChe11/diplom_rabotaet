@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Учет производственных затрат{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 2rem; 
+        }
+        .content-card {
+            max-width: 800px; 
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        .navbar-brand {
+            font-weight: 600;
+        }
+        .form-actions { 
+            margin-top: 1.5rem;
+        }
+        .table-responsive {
+            margin-top: 1rem;
+        }
+        
+        .alert-auto-dismiss {
+            transition: opacity 0.5s ease-out, height 0.5s ease-out, padding 0.5s ease-out, margin 0.5s ease-out;
+            overflow: hidden;
+        }
+        .dropdown-item.active, .dropdown-item:active {
+            color: #fff;
+            text-decoration: none;
+            background-color: #0d6efd; 
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('routes.dashboard') }}">
+                <i class="bi bi-calculator"></i> Учет затрат
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                        {# Удален пункт "Дашборд" #}
+                        
+                        {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'routes.production_journal' %}active{% endif %}" href="{{ url_for('routes.production_journal') }}">
+                                <i class="bi bi-journal-text"></i> Журнал производства
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+                        <li class="nav-item dropdown {% if request.endpoint in ['routes.material_categories', 'routes.add_material_category', 'routes.edit_material_category', 'routes.product_list', 'routes.add_product', 'routes.edit_product', 'routes.specification_list', 'routes.add_specification_general', 'routes.add_specification_for_product', 'routes.edit_specification_route', 'routes.material_receipt_list', 'routes.add_material_receipt'] %}active{% endif %}">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarСправочники" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-journal-bookmark-fill"></i> Справочники и Склад
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarСправочники">
+                                {% if current_user.role in ['admin', 'accountant'] %}
+                                <li>
+                                    <a class="dropdown-item {% if request.endpoint in ['routes.material_categories', 'routes.add_material_category', 'routes.edit_material_category'] %}active{% endif %}" href="{{ url_for('routes.material_categories') }}">
+                                        <i class="bi bi-tags"></i> Категории материалов
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% if current_user.role in ['admin', 'accountant'] %} 
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item {% if request.endpoint in ['routes.material_receipt_list', 'routes.add_material_receipt'] %}active{% endif %}" href="{{ url_for('routes.material_receipt_list') }}">
+                                        <i class="bi bi-box-arrow-in-down"></i> Оприходование материалов
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item {% if request.endpoint in ['routes.product_list', 'routes.add_product', 'routes.edit_product'] %}active{% endif %}" href="{{ url_for('routes.product_list') }}">
+                                        <i class="bi bi-box-seam"></i> Продукция
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item {% if request.endpoint in ['routes.specification_list', 'routes.add_specification_general', 'routes.add_specification_for_product', 'routes.edit_specification_route'] %}active{% endif %}" href="{{ url_for('routes.specification_list') }}">
+                                        <i class="bi bi-card-checklist"></i> Спецификации продукции
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        {% if current_user.role in ['admin', 'accountant'] %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'routes.produce_product' %}active{% endif %}" href="{{ url_for('routes.produce_product') }}">
+                                <i class="bi bi-tools"></i> Производство
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if current_user.role in ['admin', 'accountant', 'analyst'] %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'routes.report_list' or request.endpoint == 'routes.report_details' %}active{% endif %}" href="{{ url_for('routes.report_list') }}"><i class="bi bi-file-earmark-text"></i> Отчеты</a>
+                        </li>
+                        {% endif %}
+
+                        {# Удален пункт "Пользователи" #}
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('routes.logout') }}">
+                                <i class="bi bi-box-arrow-right"></i> Выйти ({{ current_user.username }})
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'routes.login' %}active{% endif %}" href="{{ url_for('routes.login') }}">
+                                <i class="bi bi-box-arrow-in-right"></i> Войти
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% include '_messages.html' %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const alerts = document.querySelectorAll('.alert-auto-dismiss');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    let bsAlertInstance = bootstrap.Alert.getInstance(alert);
+                    if (bsAlertInstance) {
+                        bsAlertInstance.close();
+                    } else {
+                        alert.remove();
+                    }
+                }, 7000); 
+            });
+        });
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
